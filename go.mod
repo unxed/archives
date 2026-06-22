@@ -31,3 +31,5 @@ require (
 	github.com/stangelandcl/ppmd v0.1.0 // indirect
 	go4.org v0.0.0-20260112195520-a5071408f32f // indirect
 )
+
+replace github.com/ulikunitz/xz => github.com/unxed/xz v0.1.5
