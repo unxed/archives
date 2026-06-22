@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	fastxz "github.com/mikelolasagasti/xz"
-	"github.com/ulikunitz/xz"
+	"github.com/unxed/xz"
 )
 
 func init() {
