@@ -88,8 +88,13 @@ func (z SevenZip) archiveOneFile(ctx context.Context, szw *sevenzip.Writer, idx 
 		return err // honor context cancellation
 	}
 
+	name := file.NameInArchive
+	if file.IsDir() && !strings.HasSuffix(name, "/") {
+		name += "/"
+	}
+
 	fh := &sevenzip.FileHeader{
-		Name:       file.NameInArchive,
+		Name:       name,
 		Modified:   file.ModTime(),
 		Attributes: uint32(file.Mode()) << 16, // Map POSIX file modes to attributes
 	}
