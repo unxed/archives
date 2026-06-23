@@ -8,7 +8,9 @@ import (
 	"io/fs"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -565,5 +567,93 @@ func TestArchiveGrowingFile(t *testing.T) {
 	bytesArchived := archive(t, Tar{}, tmpTxtFileName, tmpTxtFileInfo)
 	if len(bytesArchived) == 0 {
 		t.Errorf("Failed to archive file: %v", err)
+	}
+}
+
+func TestSevenZip_ParallelExtraction(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	file1Path := filepath.Join(tmpDir, "file1.txt")
+	file2Path := filepath.Join(tmpDir, "file2.txt")
+	if err := os.WriteFile(file1Path, []byte("parallel data 1"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file2Path, []byte("parallel data 2"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fi1, _ := os.Stat(file1Path)
+	fi2, _ := os.Stat(file2Path)
+
+	files := []FileInfo{
+		{
+			FileInfo:      fi1,
+			NameInArchive: "file1.txt",
+			Open: func() (fs.File, error) {
+				return os.Open(file1Path)
+			},
+		},
+		{
+			FileInfo:      fi2,
+			NameInArchive: "file2.txt",
+			Open: func() (fs.File, error) {
+				return os.Open(file2Path)
+			},
+		},
+	}
+
+	archivePath := filepath.Join(tmpDir, "archive.7z")
+	out, err := os.Create(archivePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sz := SevenZip{Solid: false}
+	if err = sz.Archive(context.Background(), out, files); err != nil {
+		t.Fatal(err)
+	}
+	out.Close()
+
+	in, err := os.Open(archivePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer in.Close()
+
+	extracted := make(map[string][]byte)
+	var mu sync.Mutex
+
+	err = sz.Extract(context.Background(), in, func(ctx context.Context, f FileInfo) error {
+		if f.IsDir() {
+			return nil
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		defer rc.Close()
+
+		data, err := io.ReadAll(rc)
+		if err != nil {
+			return err
+		}
+
+		mu.Lock()
+		extracted[f.NameInArchive] = data
+		mu.Unlock()
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(extracted) != 2 {
+		t.Fatalf("expected 2 extracted files, got %d", len(extracted))
+	}
+	if string(extracted["file1.txt"]) != "parallel data 1" {
+		t.Errorf("file1.txt mismatch: got %q", string(extracted["file1.txt"]))
+	}
+	if string(extracted["file2.txt"]) != "parallel data 2" {
+		t.Errorf("file2.txt mismatch: got %q", string(extracted["file2.txt"]))
 	}
 }

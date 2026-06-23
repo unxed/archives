@@ -9,7 +9,9 @@ import (
 	"io/fs"
 	"log"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/unxed/sevenzip"
 )
@@ -108,12 +110,6 @@ func (z SevenZip) archiveOneFile(ctx context.Context, szw *sevenzip.Writer, idx 
 	return nil
 }
 
-// Extract extracts files from z, implementing the Extractor interface. Uniquely, however,
-// sourceArchive must be an io.ReaderAt and io.Seeker, which are oddly disjoint interfaces
-// from io.Reader which is what the method signature requires. We chose this signature for
-// the interface because we figure you can Read() from anything you can ReadAt() or Seek()
-// with. Due to the nature of the zip archive format, if sourceArchive is not an io.Seeker
-// and io.ReaderAt, an error is returned.
 func (z SevenZip) Extract(ctx context.Context, sourceArchive io.Reader, handleFile FileHandler) error {
 	sra, ok := sourceArchive.(seekReaderAt)
 	if !ok {
@@ -133,15 +129,27 @@ func (z SevenZip) Extract(ctx context.Context, sourceArchive io.Reader, handleFi
 	// important to initialize to non-nil, empty value due to how fileIsIncluded works
 	skipDirs := skipList{}
 
-	for i, f := range zr.File {
-		if err := ctx.Err(); err != nil {
-			return err // honor context cancellation
-		}
+	// Группируем файлы по независимым сжатым потокам (folders/streams).
+	// Директории и пустые файлы (без потоков) обрабатываются отдельно.
+	streamGroups := make(map[int][]*sevenzip.File)
+	var independentFiles []*sevenzip.File
 
+	for _, f := range zr.File {
 		if fileIsIncluded(skipDirs, f.Name) {
 			continue
 		}
+		if f.FileInfo().IsDir() || f.UncompressedSize == 0 {
+			independentFiles = append(independentFiles, f)
+		} else {
+			streamGroups[f.Stream] = append(streamGroups[f.Stream], f)
+		}
+	}
 
+	// 1. Синхронно создаем все директории на главном потоке, чтобы воркеры не писали в несуществующие пути.
+	for _, f := range independentFiles {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		fi := f.FileInfo()
 		file := FileInfo{
 			FileInfo:      fi,
@@ -158,7 +166,7 @@ func (z SevenZip) Extract(ctx context.Context, sourceArchive io.Reader, handleFi
 
 		err := handleFile(ctx, file)
 		if errors.Is(err, fs.SkipAll) {
-			break
+			return nil
 		} else if errors.Is(err, fs.SkipDir) && file.IsDir() {
 			skipDirs.add(f.Name)
 		} else if err != nil {
@@ -166,8 +174,80 @@ func (z SevenZip) Extract(ctx context.Context, sourceArchive io.Reader, handleFi
 				log.Printf("[ERROR] %s: %v", f.Name, err)
 				continue
 			}
-			return fmt.Errorf("handling file %d: %s: %w", i, f.Name, err)
+			return fmt.Errorf("handling independent file %s: %w", f.Name, err)
 		}
+	}
+
+	if len(streamGroups) == 0 {
+		return nil
+	}
+
+	// 2. Параллельно распаковываем независимые потоки сжатия через пул горутин.
+	type streamJob struct {
+		streamID int
+		files    []*sevenzip.File
+	}
+
+	numWorkers := runtime.NumCPU()
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
+	if numWorkers > len(streamGroups) {
+		numWorkers = len(streamGroups)
+	}
+
+	jobCh := make(chan streamJob, len(streamGroups))
+	for id, files := range streamGroups {
+		jobCh <- streamJob{streamID: id, files: files}
+	}
+	close(jobCh)
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, numWorkers)
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for job := range jobCh {
+				for _, f := range job.files {
+					if ctx.Err() != nil {
+						return
+					}
+					fi := f.FileInfo()
+					file := FileInfo{
+						FileInfo:      fi,
+						Header:        f.FileHeader,
+						NameInArchive: f.Name,
+						Open: func() (fs.File, error) {
+							openedFile, err := f.Open()
+							if err != nil {
+								return nil, err
+							}
+							return fileInArchive{openedFile, fi}, nil
+						},
+					}
+					// Последовательная распаковка файлов внутри одного потока сжатия
+					if err := handleFile(ctx, file); err != nil {
+						if errors.Is(err, fs.SkipAll) {
+							return
+						}
+						select {
+						case errCh <- fmt.Errorf("handling file %s: %w", f.Name, err):
+						default:
+						}
+						return
+					}
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	if err := <-errCh; err != nil {
+		return err
 	}
 
 	return nil
