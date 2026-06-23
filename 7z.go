@@ -29,6 +29,10 @@ type SevenZip struct {
 
 	// The password, if dealing with an encrypted archive.
 	Password string
+
+	// If true, multiple files will be grouped into a single continuous stream
+	// (solid archive), achieving higher compression ratios.
+	Solid bool
 }
 
 func (SevenZip) Extension() string { return ".7z" }
@@ -58,7 +62,7 @@ func (z SevenZip) Archive(ctx context.Context, output io.Writer, files []FileInf
 		return fmt.Errorf("7z format requires an io.WriteSeeker to build the archive header")
 	}
 
-	szw, err := sevenzip.NewWriter(ws)
+	szw, err := sevenzip.NewWriter(ws, sevenzip.WithSolid(z.Solid))
 	if err != nil {
 		return err
 	}
