@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bodgit/sevenzip"
+	"github.com/unxed/sevenzip"
 )
 
 func init() {
@@ -52,7 +52,57 @@ func (z SevenZip) Match(_ context.Context, filename string, stream io.Reader) (M
 	return mr, nil
 }
 
-// Archive is not implemented for 7z because I do not know of a pure-Go 7z writer.
+func (z SevenZip) Archive(ctx context.Context, output io.Writer, files []FileInfo) error {
+	ws, ok := output.(io.WriteSeeker)
+	if !ok {
+		return fmt.Errorf("7z format requires an io.WriteSeeker to build the archive header")
+	}
+
+	szw, err := sevenzip.NewWriter(ws)
+	if err != nil {
+		return err
+	}
+	defer szw.Close()
+
+	for i, file := range files {
+		if err := z.archiveOneFile(ctx, szw, i, file); err != nil {
+			if z.ContinueOnError && ctx.Err() == nil {
+				log.Printf("[ERROR] %v", err)
+				continue
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (z SevenZip) archiveOneFile(ctx context.Context, szw *sevenzip.Writer, idx int, file FileInfo) error {
+	if err := ctx.Err(); err != nil {
+		return err // honor context cancellation
+	}
+
+	fh := &sevenzip.FileHeader{
+		Name:       file.NameInArchive,
+		Modified:   file.ModTime(),
+		Attributes: uint32(file.Mode()) << 16, // Map POSIX file modes to attributes
+	}
+
+	w, err := szw.CreateHeader(fh)
+	if err != nil {
+		return fmt.Errorf("creating header for file %d: %s: %w", idx, file.NameInArchive, err)
+	}
+
+	if file.IsDir() {
+		return nil
+	}
+
+	if err := openAndCopyFile(file, w); err != nil {
+		return fmt.Errorf("writing file %d: %s: %w", idx, file.NameInArchive, err)
+	}
+
+	return nil
+}
 
 // Extract extracts files from z, implementing the Extractor interface. Uniquely, however,
 // sourceArchive must be an io.ReaderAt and io.Seeker, which are oddly disjoint interfaces
@@ -122,5 +172,8 @@ func (z SevenZip) Extract(ctx context.Context, sourceArchive io.Reader, handleFi
 // https://py7zr.readthedocs.io/en/latest/archive_format.html#signature
 var sevenZipHeader = []byte("7z\xBC\xAF\x27\x1C")
 
-// Interface guard
-var _ Extractor = SevenZip{}
+// Interface guards
+var (
+	_ Archiver  = SevenZip{}
+	_ Extractor = SevenZip{}
+)
