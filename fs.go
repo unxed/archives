@@ -360,6 +360,8 @@ func (f ArchiveFS) Open(name string) (fs.File, error) {
 		}
 	}
 
+	var mu sync.Mutex
+
 	// if a filename is specified, open the archive file
 	var archiveFile *os.File
 	var err error
@@ -451,6 +453,9 @@ func (f ArchiveFS) Open(name string) (fs.File, error) {
 		if !strings.HasPrefix(file.NameInArchive+"/", name+"/") {
 			return nil
 		}
+
+		mu.Lock()
+		defer mu.Unlock()
 
 		// if this is the requested file, and it's a directory, set up the dirFile,
 		// which will include a listing of all its contents as we continue iterating
@@ -615,6 +620,8 @@ func (f *ArchiveFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	f.contents = make(map[string]fs.FileInfo)
 	f.dirs = make(map[string][]fs.DirEntry)
 
+	var mu sync.Mutex
+
 	var archiveFile *os.File
 	var err error
 	if f.Stream == nil {
@@ -644,6 +651,9 @@ func (f *ArchiveFS) ReadDir(name string) ([]fs.DirEntry, error) {
 		if file.NameInArchive == name && !file.IsDir() {
 			return &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not a directory")}
 		}
+
+		mu.Lock()
+		defer mu.Unlock()
 
 		// index this file info for quick access (overwrite any implicit one that may have been created)
 		f.contents[file.NameInArchive] = file
