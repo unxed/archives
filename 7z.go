@@ -62,7 +62,7 @@ func (z SevenZip) Archive(ctx context.Context, output io.Writer, files []FileInf
 		return fmt.Errorf("7z format requires an io.WriteSeeker to build the archive header")
 	}
 
-	szw, err := sevenzip.NewWriter(ws, sevenzip.WithSolid(z.Solid))
+	szw, err := sevenzip.NewWriter(ws, sevenzip.WithSolid(z.Solid), sevenzip.WithPassword(z.Password))
 	if err != nil {
 		return err
 	}
