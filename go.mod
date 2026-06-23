@@ -1,4 +1,4 @@
-module github.com/mholt/archives
+module github.com/unxed/archives
 
 go 1.25.5
 

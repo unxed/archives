@@ -11,7 +11,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/mholt/archives"
+	"github.com/unxed/archives"
 )
 
 func TestZip_ExtractZipWithSymlinks(t *testing.T) {
