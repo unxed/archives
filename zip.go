@@ -25,32 +25,43 @@ import (
 func init() {
 	RegisterFormat(Zip{})
 
+	// These methods might be already registered by other packages (e.g. unxed/zip)
+	// and klauspost/compress/zip panics on double registration.
+	regC := func(method uint16, comp func(io.Writer) (io.WriteCloser, error)) {
+		defer func() { recover() }()
+		zip.RegisterCompressor(method, comp)
+	}
+	regD := func(method uint16, decomp func(io.Reader) io.ReadCloser) {
+		defer func() { recover() }()
+		zip.RegisterDecompressor(method, decomp)
+	}
+
 	// TODO: What about custom flate levels too
-	zip.RegisterCompressor(ZipMethodBzip2, func(out io.Writer) (io.WriteCloser, error) {
+	regC(ZipMethodBzip2, func(out io.Writer) (io.WriteCloser, error) {
 		return bzip2.NewWriter(out, &bzip2.WriterConfig{ /*TODO: Level: z.CompressionLevel*/ })
 	})
-	zip.RegisterCompressor(ZipMethodZstd, func(out io.Writer) (io.WriteCloser, error) {
+	regC(ZipMethodZstd, func(out io.Writer) (io.WriteCloser, error) {
 		return zstd.NewWriter(out)
 	})
-	zip.RegisterCompressor(ZipMethodXz, func(out io.Writer) (io.WriteCloser, error) {
+	regC(ZipMethodXz, func(out io.Writer) (io.WriteCloser, error) {
 		return xz.NewWriter(out)
 	})
 
-	zip.RegisterDecompressor(ZipMethodBzip2, func(r io.Reader) io.ReadCloser {
+	regD(ZipMethodBzip2, func(r io.Reader) io.ReadCloser {
 		bz2r, err := bzip2.NewReader(r, nil)
 		if err != nil {
 			return nil
 		}
 		return bz2r
 	})
-	zip.RegisterDecompressor(ZipMethodZstd, func(r io.Reader) io.ReadCloser {
+	regD(ZipMethodZstd, func(r io.Reader) io.ReadCloser {
 		zr, err := zstd.NewReader(r)
 		if err != nil {
 			return nil
 		}
 		return zr.IOReadCloser()
 	})
-	zip.RegisterDecompressor(ZipMethodXz, func(r io.Reader) io.ReadCloser {
+	regD(ZipMethodXz, func(r io.Reader) io.ReadCloser {
 		xr, err := xz.NewReader(r)
 		if err != nil {
 			return nil
