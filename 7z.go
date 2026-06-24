@@ -94,9 +94,10 @@ func (z SevenZip) archiveOneFile(ctx context.Context, szw *sevenzip.Writer, idx 
 	}
 
 	fh := &sevenzip.FileHeader{
-		Name:       name,
-		Modified:   file.ModTime(),
-		Attributes: uint32(file.Mode()) << 16, // Map POSIX file modes to attributes
+		Name:             name,
+		Modified:         file.ModTime(),
+		Attributes:       uint32(file.Mode()) << 16, // Map POSIX file modes to attributes
+		UncompressedSize: uint64(file.Size()),
 	}
 
 	w, err := szw.CreateHeader(fh)
