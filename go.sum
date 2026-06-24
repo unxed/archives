@@ -50,8 +50,8 @@ github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD
 github.com/ulikunitz/xz v0.5.8/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.15 h1:9DNdB5s+SgV3bQ2ApL10xRc35ck0DuIX/isZvIk+ubY=
 github.com/ulikunitz/xz v0.5.15/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/unxed/sevenzip v0.0.0-20260624184416-d309bd2575b9 h1:EaYETQ26sCu0YHK6MBHkOdapUr0HCTgau7z9IV5wfmI=
-github.com/unxed/sevenzip v0.0.0-20260624184416-d309bd2575b9/go.mod h1:rtUTAplMvakUljp3c9jYvnCCuNg09Dq7dyZBnWE8Faw=
+github.com/unxed/sevenzip v0.0.0-20260624202739-05c8bcb6637d h1:xTBWjdN9wMixunLOd9/zhKc3O191M1XY2nz1VTHA6Io=
+github.com/unxed/sevenzip v0.0.0-20260624202739-05c8bcb6637d/go.mod h1:rtUTAplMvakUljp3c9jYvnCCuNg09Dq7dyZBnWE8Faw=
 github.com/unxed/xz v0.1.16 h1:Dxhk17Y5S1opphX3YDcx0RPIzC2IFZRzW4jSM9tp6zg=
 github.com/unxed/xz v0.1.16/go.mod h1:+i9oua9YYxBJGNLh9s4itPLtCpCXs8X7M8/SNU4FeZc=
 github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZqKjWU=
