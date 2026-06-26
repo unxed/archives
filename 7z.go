@@ -214,17 +214,19 @@ func (z SevenZip) Archive(ctx context.Context, output io.Writer, files []FileInf
 			UncompressedSize: uint64(file.Size()),
 		}
 
+		sem <- struct{}{}
 		w, err := szw.CreateHeader(fh)
 		if err != nil {
+			<-sem
 			return fmt.Errorf("creating header for file %d: %s: %w", i, file.NameInArchive, err)
 		}
 
 		if file.IsDir() {
+			<-sem
 			continue
 		}
 
 		wg.Add(1)
-		sem <- struct{}{}
 		go func(w io.WriteCloser, f FileInfo, idx int) {
 			defer wg.Done()
 			defer func() { <-sem }()
