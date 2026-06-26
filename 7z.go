@@ -64,56 +64,192 @@ func (z SevenZip) Archive(ctx context.Context, output io.Writer, files []FileInf
 		return fmt.Errorf("7z format requires an io.WriteSeeker to build the archive header")
 	}
 
-	szw, err := sevenzip.NewWriter(ws, sevenzip.WithSolid(z.Solid), sevenzip.WithPassword(z.Password))
+	concurrency := runtime.GOMAXPROCS(0)
+	if concurrency < 1 {
+		concurrency = 1
+	}
+
+	szw, err := sevenzip.NewWriter(ws, sevenzip.WithSolid(z.Solid), sevenzip.WithPassword(z.Password), sevenzip.WithConcurrency(concurrency))
 	if err != nil {
 		return err
 	}
-	defer szw.Close()
+	defer func() {
+		// Безопасное закрытие при панике (ошибки явно обрабатываются ниже)
+		szw.Close()
+	}()
 
-	for i, file := range files {
-		if err := z.archiveOneFile(ctx, szw, i, file); err != nil {
-			if z.ContinueOnError && ctx.Err() == nil {
-				log.Printf("[ERROR] %v", err)
+	if z.Solid {
+		// РЕЖИМ SOLID: Параллельное чтение в RAM, последовательная запись в 7z
+		// Сам LZMA2 компрессор распараллелит данные на чанки под капотом.
+		type fileTask struct {
+			idx  int
+			file FileInfo
+			data []byte
+			err  error
+			done chan struct{}
+		}
+
+		tasks := make(chan *fileTask, concurrency*2)
+		orderedTasks := make(chan *fileTask, concurrency*2)
+
+		var wg sync.WaitGroup
+		for i := 0; i < concurrency; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for task := range tasks {
+					if ctx.Err() == nil && !task.file.IsDir() {
+						size := task.file.Size()
+						// Предзагружаем до 16 МБ, чтобы дисковый I/O не тормозил компрессор
+						if size > 0 && size <= 16*1024*1024 {
+							buf := make([]byte, size)
+							f, err := task.file.Open()
+							if err == nil {
+								_, task.err = io.ReadFull(f, buf)
+								task.data = buf
+								f.Close()
+							} else {
+								task.err = err
+							}
+						}
+					}
+					close(task.done)
+				}
+			}()
+		}
+
+		go func() {
+			defer close(tasks)
+			defer close(orderedTasks)
+			for i, file := range files {
+				if ctx.Err() != nil {
+					break
+				}
+				task := &fileTask{
+					idx:  i,
+					file: file,
+					done: make(chan struct{}),
+				}
+				select {
+				case tasks <- task:
+				case <-ctx.Done():
+					return
+				}
+				select {
+				case orderedTasks <- task:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+
+		for task := range orderedTasks {
+			<-task.done
+			if task.err != nil {
+				if z.ContinueOnError && ctx.Err() == nil {
+					log.Printf("[ERROR] %v", task.err)
+					continue
+				}
+				return task.err
+			}
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
+			name := task.file.NameInArchive
+			if task.file.IsDir() && !strings.HasSuffix(name, "/") {
+				name += "/"
+			}
+
+			fh := &sevenzip.FileHeader{
+				Name:             name,
+				Modified:         task.file.ModTime(),
+				Attributes:       uint32(task.file.Mode()) << 16,
+				UncompressedSize: uint64(task.file.Size()),
+			}
+
+			w, err := szw.CreateHeader(fh)
+			if err != nil {
+				return fmt.Errorf("creating header for file %d: %s: %w", task.idx, task.file.NameInArchive, err)
+			}
+
+			if task.file.IsDir() {
 				continue
 			}
+
+			if task.data != nil {
+				if _, err := w.Write(task.data); err != nil {
+					return fmt.Errorf("writing file %d: %s: %w", task.idx, task.file.NameInArchive, err)
+				}
+			} else {
+				if err := openAndCopyFile(task.file, w); err != nil {
+					return fmt.Errorf("writing file %d: %s: %w", task.idx, task.file.NameInArchive, err)
+				}
+			}
+		}
+
+		wg.Wait()
+		return szw.Close()
+	}
+
+	// РЕЖИМ NON-SOLID: Параллельное сжатие независимых файлов (spooling)
+	var wg sync.WaitGroup
+	errCh := make(chan error, concurrency)
+	sem := make(chan struct{}, concurrency)
+
+	for i, file := range files {
+		if err := ctx.Err(); err != nil {
 			return err
 		}
+
+		name := file.NameInArchive
+		if file.IsDir() && !strings.HasSuffix(name, "/") {
+			name += "/"
+		}
+
+		fh := &sevenzip.FileHeader{
+			Name:             name,
+			Modified:         file.ModTime(),
+			Attributes:       uint32(file.Mode()) << 16,
+			UncompressedSize: uint64(file.Size()),
+		}
+
+		w, err := szw.CreateHeader(fh)
+		if err != nil {
+			return fmt.Errorf("creating header for file %d: %s: %w", i, file.NameInArchive, err)
+		}
+
+		if file.IsDir() {
+			continue
+		}
+
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(w io.WriteCloser, f FileInfo, idx int) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			defer w.Close()
+
+			if err := openAndCopyFile(f, w); err != nil {
+				select {
+				case errCh <- fmt.Errorf("writing file %d: %s: %w", idx, f.NameInArchive, err):
+				default:
+				}
+			}
+		}(w, file, i)
 	}
 
-	return nil
-}
-
-func (z SevenZip) archiveOneFile(ctx context.Context, szw *sevenzip.Writer, idx int, file FileInfo) error {
-	if err := ctx.Err(); err != nil {
-		return err // honor context cancellation
+	wg.Wait()
+	close(errCh)
+	if err := <-errCh; err != nil {
+		if z.ContinueOnError && ctx.Err() == nil {
+			log.Printf("[ERROR] %v", err)
+			return szw.Close()
+		}
+		return err
 	}
 
-	name := file.NameInArchive
-	if file.IsDir() && !strings.HasSuffix(name, "/") {
-		name += "/"
-	}
-
-	fh := &sevenzip.FileHeader{
-		Name:             name,
-		Modified:         file.ModTime(),
-		Attributes:       uint32(file.Mode()) << 16, // Map POSIX file modes to attributes
-		UncompressedSize: uint64(file.Size()),
-	}
-
-	w, err := szw.CreateHeader(fh)
-	if err != nil {
-		return fmt.Errorf("creating header for file %d: %s: %w", idx, file.NameInArchive, err)
-	}
-
-	if file.IsDir() {
-		return nil
-	}
-
-	if err := openAndCopyFile(file, w); err != nil {
-		return fmt.Errorf("writing file %d: %s: %w", idx, file.NameInArchive, err)
-	}
-
-	return nil
+	return szw.Close()
 }
 
 func (z SevenZip) Extract(ctx context.Context, sourceArchive io.Reader, handleFile FileHandler) error {

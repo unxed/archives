@@ -383,10 +383,12 @@ func openAndCopyFile(file FileInfo, w io.Writer) error {
 		return err
 	}
 	defer fileReader.Close()
-	// When file is in use and size is being written to, creating the compressed
-	// file will fail with "archive/tar: write too long." Using CopyN gracefully
-	// handles this.
-	_, err = io.CopyN(w, fileReader, file.Size())
+
+	// Используем CopyBuffer с буфером 1 МБ для обеспечения максимальной
+	// пропускной способности без частых аллокаций.
+	buf := make([]byte, 1024*1024)
+	limitR := io.LimitReader(fileReader, file.Size())
+	_, err = io.CopyBuffer(w, limitR, buf)
 	if err != nil && err != io.EOF {
 		return err
 	}
