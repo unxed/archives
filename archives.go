@@ -375,6 +375,24 @@ type FromFSOptions struct {
 // Any other returned error will terminate a walk and be returned to the caller.
 type FileHandler func(ctx context.Context, info FileInfo) error
 
+var copyBufPool = make(chan []byte, 32)
+
+func getCopyBuffer() []byte {
+	select {
+	case b := <-copyBufPool:
+		return b
+	default:
+		return make([]byte, 128*1024)
+	}
+}
+
+func putCopyBuffer(b []byte) {
+	select {
+	case copyBufPool <- b:
+	default:
+	}
+}
+
 // openAndCopyFile opens file for reading, copies its
 // contents to w, then closes file.
 func openAndCopyFile(file FileInfo, w io.Writer) error {
@@ -384,9 +402,9 @@ func openAndCopyFile(file FileInfo, w io.Writer) error {
 	}
 	defer fileReader.Close()
 
-	// Используем CopyBuffer с буфером 1 МБ для обеспечения максимальной
-	// пропускной способности без частых аллокаций.
-	buf := make([]byte, 1024*1024)
+	buf := getCopyBuffer()
+	defer putCopyBuffer(buf)
+
 	limitR := io.LimitReader(fileReader, file.Size())
 	_, err = io.CopyBuffer(w, limitR, buf)
 	if err != nil && err != io.EOF {
