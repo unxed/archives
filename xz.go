@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	fastxz "github.com/mikelolasagasti/xz"
 	"github.com/unxed/xz"
 )
 
@@ -65,8 +64,8 @@ func (Xz) OpenReader(r io.Reader) (io.ReadCloser, error) {
 		}
 	}
 
-	// Fallback to sequential decompression
-	xr, err := fastxz.NewReader(r, 0)
+	// Fallback to sequential decompression using our optimized unxed/xz
+	xr, err := xz.NewReader(r)
 	if err != nil {
 		return nil, err
 	}

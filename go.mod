@@ -12,7 +12,6 @@ require (
 
 require (
 	github.com/STARRY-S/zip v0.2.3
-	github.com/mikelolasagasti/xz v1.0.1
 	github.com/minio/minlz v1.1.1
 	github.com/pierrec/lz4/v4 v4.1.27
 	github.com/sorairolake/lzip-go v0.3.8
