@@ -48,10 +48,10 @@ github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD
 github.com/ulikunitz/xz v0.5.8/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.15 h1:9DNdB5s+SgV3bQ2ApL10xRc35ck0DuIX/isZvIk+ubY=
 github.com/ulikunitz/xz v0.5.15/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/unxed/sevenzip v0.0.0-20260627001113-b6e2c7e4cc88 h1:V4s545Iq+ynA/I8+yPUFhZ5XXPxY7lJJ95vD+yx+e0w=
-github.com/unxed/sevenzip v0.0.0-20260627001113-b6e2c7e4cc88/go.mod h1:tlQdVTl0JkKDEYcq8am2ueeztm+kMpnOVPMEIaaCHzo=
-github.com/unxed/xz v0.1.28 h1:O2MN9Gm/CCujQi7Ihm12UCxFjRzCs5BBkI+GwysFMbw=
-github.com/unxed/xz v0.1.28/go.mod h1:+i9oua9YYxBJGNLh9s4itPLtCpCXs8X7M8/SNU4FeZc=
+github.com/unxed/sevenzip v0.0.0-20260627103327-c8ef042d6da4 h1:Li44V9TNd6+2qO8t5RDtP6U6YSvSIoVzeiUR5JOKjPA=
+github.com/unxed/sevenzip v0.0.0-20260627103327-c8ef042d6da4/go.mod h1:PfGG7Up7mNDKjKZY/ngg3QWo3R800uNi5+7aCUIoKPs=
+github.com/unxed/xz v0.1.30 h1:n1yDj8+nAhsMSS+c+o89t++cMVuXVua4+rcWlzWchaU=
+github.com/unxed/xz v0.1.30/go.mod h1:+i9oua9YYxBJGNLh9s4itPLtCpCXs8X7M8/SNU4FeZc=
 github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZqKjWU=
 github.com/xyproto/randomstring v1.0.5/go.mod h1:rgmS5DeNXLivK7YprL0pY+lTuhNQW3iGxZ18UQApw/E=
 go4.org v0.0.0-20260112195520-a5071408f32f h1:ziUVAjmTPwQMBmYR1tbdRFJPtTcQUI12fH9QQjfb0Sw=
