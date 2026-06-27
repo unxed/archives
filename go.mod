@@ -15,8 +15,8 @@ require (
 	github.com/minio/minlz v1.1.1
 	github.com/pierrec/lz4/v4 v4.1.27
 	github.com/sorairolake/lzip-go v0.3.8
-	github.com/unxed/sevenzip v0.0.0-20260626190151-c4dc8c002438
-	github.com/unxed/xz v0.1.27
+	github.com/unxed/sevenzip v0.0.0-20260627001113-b6e2c7e4cc88
+	github.com/unxed/xz v0.1.28
 	golang.org/x/text v0.37.0
 )
 
