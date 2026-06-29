@@ -29,5 +29,3 @@ require (
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	go4.org v0.0.0-20260112195520-a5071408f32f // indirect
 )
-
-replace github.com/unxed/xz => ../xz
