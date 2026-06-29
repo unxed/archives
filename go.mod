@@ -15,8 +15,8 @@ require (
 	github.com/minio/minlz v1.1.1
 	github.com/pierrec/lz4/v4 v4.1.27
 	github.com/sorairolake/lzip-go v0.3.8
-	github.com/unxed/sevenzip v0.0.0-20260628191451-50cccaafd4f2
-	github.com/unxed/xz v0.1.36
+	github.com/unxed/sevenzip v0.0.0-20260629175426-99fd29a3eb77
+	github.com/unxed/xz v0.1.37
 	golang.org/x/text v0.37.0
 )
 
@@ -29,3 +29,5 @@ require (
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	go4.org v0.0.0-20260112195520-a5071408f32f // indirect
 )
+
+replace github.com/unxed/xz => ../xz
