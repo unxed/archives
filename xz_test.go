@@ -2,9 +2,9 @@ package archives
 
 import (
 	"bytes"
-    "fmt"
-    "strings"
+	"fmt"
 	"io"
+	"strings"
 	"testing"
 )
 

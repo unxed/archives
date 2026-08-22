@@ -594,7 +594,7 @@ func TestFilesFromFS(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for filename, _ := range testfs {
+		for filename := range testfs {
 			found := false
 			for _, fi := range files {
 				if filename == fi.NameInArchive {

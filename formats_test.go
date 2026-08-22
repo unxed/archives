@@ -118,58 +118,58 @@ func checkErr(t *testing.T, err error, msgFmt string, args ...any) {
 
 func TestIdentifyFindFormatByFileName(t *testing.T) {
 	tests := []struct {
-		filename string
-		expected string
+		filename    string
+		expected    string
 		shouldError bool
 	}{
 		{
-			filename: "test.tar",
-			expected: ".tar",
+			filename:    "test.tar",
+			expected:    ".tar",
 			shouldError: false,
 		},
 		{
-			filename: "test.tar.bz2",
-			expected: ".tar.bz2",
+			filename:    "test.tar.bz2",
+			expected:    ".tar.bz2",
 			shouldError: false,
 		},
 		{
-			filename: "test.tar.br",
-			expected: ".tar.br",
+			filename:    "test.tar.br",
+			expected:    ".tar.br",
 			shouldError: false,
 		},
 		{
-			filename: "test.tar.bru",
-			expected: ".tar",
+			filename:    "test.tar.bru",
+			expected:    ".tar",
 			shouldError: false,
 		},
 		{
-			filename: "test.7z",
-			expected: ".7z",
+			filename:    "test.7z",
+			expected:    ".7z",
 			shouldError: false,
 		},
 		{
-			filename: "test.tartest",
-			expected: "",
+			filename:    "test.tartest",
+			expected:    "",
 			shouldError: true,
 		},
 		{
-			filename: "testtar.test",
-			expected: "",
+			filename:    "testtar.test",
+			expected:    "",
 			shouldError: true,
 		},
 		{
-			filename: "testtar.gz",
-			expected: ".gz",
+			filename:    "testtar.gz",
+			expected:    ".gz",
 			shouldError: false,
 		},
 		{
-			filename: "tar.tartest.zip",
-			expected: ".zip",
+			filename:    "tar.tartest.zip",
+			expected:    ".zip",
 			shouldError: false,
 		},
 		{
-			filename: "tartest",
-			expected: "",
+			filename:    "tartest",
+			expected:    "",
 			shouldError: true,
 		},
 	}

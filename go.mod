@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/andybalholm/brotli v1.2.1
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707
-	github.com/klauspost/compress v1.18.6
+	github.com/klauspost/compress v1.19.2
 	github.com/klauspost/pgzip v1.2.6
 	github.com/nwaples/rardecode/v2 v2.2.3
 )
