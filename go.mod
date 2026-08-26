@@ -3,7 +3,7 @@ module github.com/unxed/archives
 go 1.25.5
 
 require (
-	github.com/andybalholm/brotli v1.2.1
+	github.com/andybalholm/brotli v1.2.2
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707
 	github.com/klauspost/compress v1.19.2
 	github.com/klauspost/pgzip v1.2.6
@@ -15,9 +15,9 @@ require (
 	github.com/minio/minlz v1.1.1
 	github.com/pierrec/lz4/v4 v4.1.27
 	github.com/sorairolake/lzip-go v0.3.8
-	github.com/unxed/sevenzip v0.0.0-20260704211908-25d317f8295f
+	github.com/unxed/sevenzip v0.0.0-20260826171606-a536eac9d163
 	github.com/unxed/xz v0.1.41
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.40.0
 )
 
 require (
