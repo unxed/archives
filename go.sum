@@ -23,8 +23,8 @@ github.com/klauspost/pgzip v1.2.6 h1:8RXeL5crjEUFnR2/Sn6GJNWtSQ3Dk8pq4CL3jvdDyjU
 github.com/klauspost/pgzip v1.2.6/go.mod h1:Ch1tH69qFZu15pkjo5kYi6mth2Zzwzt50oCQKQE9RUs=
 github.com/minio/minlz v1.1.1 h1:OGmft1V6AnI/Wme332U6bhG54nxEan+VFgkD7lat4KM=
 github.com/minio/minlz v1.1.1/go.mod h1:qT0aEB35q79LLornSzeDH75LBf3aH1MV+jB5w9Wasec=
-github.com/nwaples/rardecode/v2 v2.2.3 h1:qaVuy3ChZDbAQZshPLjHeNJKF3Cru8uo9jmgveKIy2A=
-github.com/nwaples/rardecode/v2 v2.2.3/go.mod h1:7uz379lSxPe6j9nvzxUZ+n7mnJNgjsRNb6IbvGVHRmw=
+github.com/nwaples/rardecode/v2 v2.4.1 h1:F7zNW2LdAuuBThHWXQaiFUGVD/sef299NfWSB1nHAl4=
+github.com/nwaples/rardecode/v2 v2.4.1/go.mod h1:7uz379lSxPe6j9nvzxUZ+n7mnJNgjsRNb6IbvGVHRmw=
 github.com/pierrec/lz4/v4 v4.1.27 h1:+PhzhWDrjRj89TH2sw43nE3+4+W8lSxIuQadEHZyjUk=
 github.com/pierrec/lz4/v4 v4.1.27/go.mod h1:EoQMVJgeeEOMsCqCzqFm2O0cJvljX2nGZjcRIPL34O4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
