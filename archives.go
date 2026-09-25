@@ -237,7 +237,7 @@ func FilesFromFS(ctx context.Context, fsys fs.FS, options *FromFSOptions, filena
 					}
 				} else {
 					// preserve symlinks
-					linkTarget, err = fs.ReadLink(fsys, fixOSPath(filename))
+					linkTarget, err = fs.ReadLink(fsys, filename)
 					if err != nil {
 						return fmt.Errorf("%s: ReadLink: %w", filename, err)
 					}
