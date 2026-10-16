@@ -275,6 +275,9 @@ func (z SevenZip) Extract(ctx context.Context, sourceArchive io.Reader, handleFi
 	if err != nil {
 		return err
 	}
+	// folder readers parked in sevenzip's per-folder pool can hold decompression
+	// workers; a Reader from NewReader has no Close, so release them explicitly
+	defer func() { _ = zr.ReleasePool() }()
 
 	// important to initialize to non-nil, empty value due to how fileIsIncluded works
 	skipDirs := skipList{}
