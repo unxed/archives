@@ -3,6 +3,7 @@ module github.com/unxed/archives
 go 1.25.5
 
 require (
+	github.com/abemedia/go-cabinet v0.2.0
 	github.com/andybalholm/brotli v1.2.2
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707
 	github.com/klauspost/compress v1.19.2
