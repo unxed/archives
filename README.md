@@ -48,6 +48,7 @@ Introducing **mholt/archives** - a cross-platform, multi-format Go library for w
 - .tar (including any compressed variants like .tar.gz)
 - .rar (read-only)
 - .7z (read-only)
+- .cab (read-only; uncompressed and MS-ZIP, other methods via `cabinet.RegisterDecompressor`)
 
 ## Command line utility
 
